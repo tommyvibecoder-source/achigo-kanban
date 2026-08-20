@@ -12,7 +12,8 @@ import {
   FolderPlus,
   CheckCircle2,
   Lock,
-  LogOut
+  LogOut,
+  User
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -25,6 +26,7 @@ export const Header: React.FC = () => {
     activeUser,
     setActiveUserId,
     setIsTeamModalOpen,
+    setIsProfileModalOpen,
     setIsNewIdeaModalOpen,
     searchQuery,
     setSearchQuery,
@@ -231,12 +233,23 @@ export const Header: React.FC = () => {
                   <button
                     onClick={() => {
                       setIsUserDropdownOpen(false);
-                      setIsTeamModalOpen(true);
+                      setIsProfileModalOpen(true);
                     }}
                     className="w-full text-left px-2.5 py-1.5 text-xs text-blue-600 hover:bg-blue-50 rounded flex items-center space-x-2 font-medium"
                   >
+                    <User className="w-3.5 h-3.5" />
+                    <span>Edit My Profile</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsUserDropdownOpen(false);
+                      setIsTeamModalOpen(true);
+                    }}
+                    className="w-full text-left px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-50 rounded flex items-center space-x-2 font-medium"
+                  >
                     <Users className="w-3.5 h-3.5" />
-                    <span>Manage Team & Access</span>
+                    <span>Team Profiles & Directory</span>
                   </button>
 
                   <button

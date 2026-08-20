@@ -10,6 +10,7 @@ import { IdeaModal } from './components/ideas/IdeaModal';
 import { NewIdeaModal } from './components/ideas/NewIdeaModal';
 import { ProjectModal } from './components/projects/ProjectModal';
 import { TeamModal } from './components/team/TeamModal';
+import { ProfileModal } from './components/team/ProfileModal';
 import { AiPromptModal } from './components/ai-exporter/AiPromptModal';
 import { LoginScreen } from './components/auth/LoginScreen';
 
@@ -42,6 +43,7 @@ export const AppContent: React.FC = () => {
       <NewIdeaModal />
       <ProjectModal />
       <TeamModal />
+      <ProfileModal />
       <AiPromptModal />
     </div>
   );

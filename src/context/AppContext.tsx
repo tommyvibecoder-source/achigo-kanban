@@ -45,6 +45,8 @@ interface AppContextType {
   addTeamMember: (member: Omit<TeamMember, 'id'>) => void;
   updateTeamMember: (member: TeamMember) => void;
   deleteTeamMember: (id: string) => void;
+  updateProfile: (updates: Partial<TeamMember>) => void;
+  adminResetMemberPasscode: (memberId: string, newPasscode: string, forceReset?: boolean) => { success: boolean; message?: string };
 
   // Authentication & Passcode Reset (Zero-cost RBAC)
   isAuthenticated: boolean;
@@ -70,6 +72,8 @@ interface AppContextType {
   setIsProjectModalOpen: (open: boolean) => void;
   isTeamModalOpen: boolean;
   setIsTeamModalOpen: (open: boolean) => void;
+  isProfileModalOpen: boolean;
+  setIsProfileModalOpen: (open: boolean) => void;
   aiPromptModalIdea: IdeaCard | null;
   setAiPromptModalIdea: (idea: IdeaCard | null) => void;
 
@@ -101,6 +105,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isNewIdeaModalOpen, setIsNewIdeaModalOpen] = useState(false);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [aiPromptModalIdea, setAiPromptModalIdea] = useState<IdeaCard | null>(null);
 
   // Sync to storage
@@ -168,6 +173,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsAuthenticated(true);
     localStorage.setItem('achigo_auth_v1', 'true');
     return true;
+  };
+
+  const updateProfile = (updates: Partial<TeamMember>) => {
+    const updated = teamMembers.map((m) =>
+      m.id === activeUser.id ? { ...m, ...updates } : m
+    );
+    setTeamMembers(updated);
+  };
+
+  const adminResetMemberPasscode = (
+    memberId: string,
+    newPasscode: string,
+    forceReset = true
+  ): { success: boolean; message?: string } => {
+    if (!isFounder) {
+      return { success: false, message: 'Only Co-Founders/Admins (Zogo & Achiri) can reset other members passcodes.' };
+    }
+
+    const cleanPass = newPasscode.trim();
+    if (cleanPass.length < 4) {
+      return { success: false, message: 'Passcode must be at least 4 characters long.' };
+    }
+
+    const updated = teamMembers.map((m) =>
+      m.id === memberId
+        ? { ...m, passcode: cleanPass, mustResetPasscode: forceReset }
+        : m
+    );
+
+    setTeamMembers(updated);
+    return { success: true };
   };
 
   const logout = () => {
@@ -244,7 +280,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { allowed: true };
   };
 
-  // Project CRUD
+  // Project CRUD (Ensuring Admin can delete smoothly)
   const createProject = (projectData: Omit<Project, 'id' | 'createdAt'>) => {
     const newProject: Project = {
       ...projectData,
@@ -265,11 +301,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, message: 'Permission Denied: Only Co-Founders (Zogo & Achiri) can delete project workspaces.' };
     }
     if (projects.length <= 1) {
-      return { success: false, message: 'Cannot delete the only remaining project space.' };
+      return { success: false, message: 'Cannot delete the only remaining project space. Create another project first.' };
     }
+
     const remaining = projects.filter((p) => p.id !== id);
     setProjects(remaining);
     setIdeas(ideas.filter((i) => i.projectId !== id));
+
     if (activeProjectId === id) {
       setActiveProjectId(remaining[0].id);
     }
@@ -534,6 +572,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addTeamMember,
         updateTeamMember,
         deleteTeamMember,
+        updateProfile,
+        adminResetMemberPasscode,
 
         isAuthenticated,
         login,
@@ -558,6 +598,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsProjectModalOpen,
         isTeamModalOpen,
         setIsTeamModalOpen,
+        isProfileModalOpen,
+        setIsProfileModalOpen,
         aiPromptModalIdea,
         setAiPromptModalIdea,
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Users, X, ShieldCheck, Copy, Check, Trash2 } from 'lucide-react';
-import { RoleType } from '../../types';
+import { Users, X, Copy, Check, Trash2, KeyRound, AlertCircle, Plus } from 'lucide-react';
+import { RoleType, TeamMember } from '../../types';
 
 export const TeamModal: React.FC = () => {
   const {
@@ -13,6 +13,8 @@ export const TeamModal: React.FC = () => {
     activeUser,
     setActiveUserId,
     isFounder,
+    adminResetMemberPasscode,
+    setIsProfileModalOpen,
   } = useApp();
 
   const [name, setName] = useState('');
@@ -22,6 +24,12 @@ export const TeamModal: React.FC = () => {
   const [passcode, setPasscode] = useState('');
   const [avatar, setAvatar] = useState('👩‍💻');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Admin Passcode Reset Modal State
+  const [resettingMember, setResettingMember] = useState<TeamMember | null>(null);
+  const [adminNewPasscode, setAdminNewPasscode] = useState('');
+  const [forceResetCheck, setForceResetCheck] = useState(true);
+  const [adminNotice, setAdminNotice] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
 
   if (!isTeamModalOpen) return null;
 
@@ -42,6 +50,7 @@ export const TeamModal: React.FC = () => {
       avatar,
       color: '#0052CC',
       passcode: cleanPass,
+      mustResetPasscode: true,
       email: `${cleanUser}@achigo.tech`,
     });
 
@@ -49,9 +58,11 @@ export const TeamModal: React.FC = () => {
     setUsername('');
     setRole('');
     setPasscode('');
+    setAdminNotice({ type: 'success', text: `Account for ${name} created with temporary passcode "${cleanPass}"!` });
+    setTimeout(() => setAdminNotice(null), 3500);
   };
 
-  const handleShareInvite = (member: (typeof teamMembers)[0]) => {
+  const handleShareInvite = (member: TeamMember) => {
     const inviteText = `🚀 Welcome to AchiGO (Achieve • Grow • Outscale) Workspace!
 
 Here are your team login credentials:
@@ -69,17 +80,40 @@ Log in to start collaborating, scoping, and voting on the product Kanban!`;
     setTimeout(() => setCopiedId(null), 2500);
   };
 
+  const handleAdminResetSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resettingMember) return;
+
+    const res = adminResetMemberPasscode(resettingMember.id, adminNewPasscode, forceResetCheck);
+    if (res.success) {
+      setAdminNotice({
+        type: 'success',
+        text: `Passcode for ${resettingMember.name} has been reset to "${adminNewPasscode}".`,
+      });
+      setResettingMember(null);
+      setAdminNewPasscode('');
+      setTimeout(() => setAdminNotice(null), 4000);
+    } else {
+      setAdminNotice({
+        type: 'error',
+        text: res.message || 'Failed to reset passcode.',
+      });
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[92vh] overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full flex flex-col max-h-[92vh] overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Users className="w-5 h-5 text-blue-600" />
+          <div className="flex items-center space-x-2.5">
+            <div className="p-2 bg-blue-600 text-white rounded-lg">
+              <Users className="w-5 h-5" />
+            </div>
             <div>
-              <h3 className="font-bold text-sm text-slate-900">Team Accounts & Access Control</h3>
+              <h3 className="font-bold text-sm text-slate-900">Team Profiles & Access Directory</h3>
               <p className="text-xs text-slate-500">
-                Manage roles, passcodes, and share login credentials at $0 cost
+                View team profiles, manage accounts, and administer passcodes
               </p>
             </div>
           </div>
@@ -91,106 +125,171 @@ Log in to start collaborating, scoping, and voting on the product Kanban!`;
           </button>
         </div>
 
-        <div className="p-5 overflow-y-auto space-y-5 flex-1">
-          {/* Deletion & Permission Rules */}
-          <div className="bg-blue-50/80 border border-blue-200 p-3.5 rounded-xl text-xs text-blue-950 space-y-1">
-            <div className="font-bold flex items-center space-x-1.5 text-blue-900">
-              <ShieldCheck className="w-4 h-4 text-blue-600" />
-              <span>Permission & Deletion Governance</span>
+        <div className="p-6 overflow-y-auto space-y-6 flex-1">
+          {/* Notification Banner */}
+          {adminNotice && (
+            <div
+              className={`p-3 rounded-xl text-xs flex items-center space-x-2 animate-in fade-in ${
+                adminNotice.type === 'error'
+                  ? 'bg-rose-50 border border-rose-200 text-rose-800'
+                  : 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+              }`}
+            >
+              {adminNotice.type === 'error' ? (
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              ) : (
+                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+              )}
+              <span>{adminNotice.text}</span>
             </div>
-            <div className="text-blue-900 leading-relaxed space-y-0.5">
-              <div>• <strong>Co-Founders (Zogo & Achiri):</strong> Full Admin access, manage team accounts, can delete cards and projects.</div>
-              <div>• <strong>Leads & Members:</strong> Can scope ideas, edit PRDs, cast consensus votes, create AI prompts, run manual QA tests, but <strong>cannot delete cards</strong>.</div>
+          )}
+
+          {/* User Profile Quick Access Card */}
+          <div className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-4 rounded-xl shadow-sm flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <span className="text-3xl">{activeUser.avatar}</span>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <h4 className="font-bold text-sm">{activeUser.name}</h4>
+                  <span className="text-[10px] px-1.5 py-0.2 bg-blue-700 text-blue-100 rounded font-semibold uppercase">
+                    {activeUser.roleType === 'founder' ? '👑 Founder' : activeUser.roleType}
+                  </span>
+                </div>
+                <p className="text-xs text-blue-200">{activeUser.role} • @{activeUser.username}</p>
+              </div>
             </div>
+            <button
+              onClick={() => {
+                setIsTeamModalOpen(false);
+                setIsProfileModalOpen(true);
+              }}
+              className="px-3.5 py-1.5 bg-white text-blue-900 hover:bg-blue-50 rounded-lg text-xs font-bold shadow-xs transition-colors"
+            >
+              Edit My Profile ✏️
+            </button>
           </div>
 
-          {/* Roster & Passcodes List */}
-          <div className="space-y-2">
-            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-              Team Member Accounts ({teamMembers.length})
-            </h4>
-            <div className="space-y-2">
+          {/* Team Members Roster Directory */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                Team Directory ({teamMembers.length} Members)
+              </h4>
+              <span className="text-[10px] text-slate-500">
+                {isFounder ? '👑 Admin Mode (Passcode reset available)' : '🔒 Passcode resets restricted to Admins'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {teamMembers.map((m) => {
-                const isActive = m.id === activeUser.id;
+                const isCurrent = m.id === activeUser.id;
                 const isItemFounder = m.roleType === 'founder';
 
                 return (
                   <div
                     key={m.id}
-                    className={`p-3 rounded-xl border text-xs flex flex-wrap items-center justify-between gap-3 ${
-                      isActive ? 'bg-blue-50/70 border-blue-300' : 'bg-white border-slate-200'
+                    className={`p-3.5 rounded-xl border text-xs flex flex-col justify-between space-y-3 transition-all ${
+                      isCurrent
+                        ? 'bg-blue-50/70 border-blue-300 ring-1 ring-blue-300'
+                        : 'bg-white border-slate-200 hover:border-slate-300'
                     }`}
                   >
-                    <div className="flex items-center space-x-3">
-                      <span className="text-2xl">{m.avatar}</span>
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <span className="font-bold text-slate-900">{m.name}</span>
-                          <span className="text-[10px] px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded font-mono font-semibold">
-                            @{m.username || m.name.toLowerCase()}
-                          </span>
-                          {isItemFounder && (
-                            <span className="text-[10px] px-1.5 py-0.2 bg-amber-100 text-amber-900 font-bold rounded">
-                              👑 Founder / Admin
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[11px] text-slate-500">{m.role}</div>
-                        {isFounder && (
-                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                            Passcode PIN: <span className="font-bold text-slate-700 bg-slate-100 px-1 rounded">{m.passcode}</span>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-2xl p-1 bg-slate-100 rounded-lg">{m.avatar}</span>
+                        <div>
+                          <div className="flex items-center space-x-1.5">
+                            <span className="font-bold text-slate-900">{m.name}</span>
+                            {isCurrent && (
+                              <span className="text-[9px] bg-blue-600 text-white px-1 py-0.2 rounded font-semibold">
+                                You
+                              </span>
+                            )}
+                            {isItemFounder && (
+                              <span className="text-[9px] bg-amber-100 text-amber-900 font-bold px-1 py-0.2 rounded">
+                                👑 Founder
+                              </span>
+                            )}
                           </div>
-                        )}
+                          <p className="text-[11px] text-slate-500">{m.role}</p>
+                          <p className="text-[10px] font-mono text-slate-400">@{m.username || m.name.toLowerCase()}</p>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center space-x-2 shrink-0">
-                      {/* Copy Invite / Login details */}
+                      {/* Share invite credentials button */}
                       <button
                         type="button"
                         onClick={() => handleShareInvite(m)}
-                        className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-medium flex items-center space-x-1"
-                        title="Copy login invite message to clipboard"
+                        className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-[11px] font-medium flex items-center space-x-1"
+                        title="Copy login invite"
                       >
                         {copiedId === m.id ? (
                           <>
-                            <Check className="w-3.5 h-3.5 text-emerald-600" />
-                            <span className="text-emerald-700 font-semibold">Invite Copied!</span>
+                            <Check className="w-3 h-3 text-emerald-600" />
+                            <span className="text-emerald-700 font-bold">Copied</span>
                           </>
                         ) : (
                           <>
-                            <Copy className="w-3.5 h-3.5 text-slate-500" />
-                            <span>Share Login</span>
+                            <Copy className="w-3 h-3 text-slate-500" />
+                            <span>Share</span>
                           </>
                         )}
                       </button>
+                    </div>
 
-                      <button
-                        type="button"
-                        onClick={() => setActiveUserId(m.id)}
-                        className={`text-xs px-2.5 py-1 rounded-lg font-semibold transition-colors ${
-                          isActive
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                        }`}
-                      >
-                        {isActive ? 'Current' : 'Switch'}
-                      </button>
+                    {/* Actions Bar */}
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                      <div className="text-slate-400">
+                        {isFounder && (
+                          <span className="font-mono text-[10px] text-slate-500">
+                            PIN: <span className="bg-slate-100 px-1 py-0.2 rounded font-bold text-slate-700">{m.passcode}</span>
+                          </span>
+                        )}
+                      </div>
 
-                      {isFounder && !isItemFounder && teamMembers.length > 2 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (confirm(`Remove account for ${m.name}?`)) {
-                              deleteTeamMember(m.id);
-                            }
-                          }}
-                          className="text-slate-400 hover:text-red-600 p-1"
-                          title="Remove user"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+                      <div className="flex items-center space-x-2">
+                        {/* Admin Reset Passcode Button (Only for Admins) */}
+                        {isFounder && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setResettingMember(m);
+                              setAdminNewPasscode(m.username + '2026');
+                            }}
+                            className="text-blue-600 hover:underline font-semibold flex items-center space-x-1"
+                          >
+                            <KeyRound className="w-3 h-3" />
+                            <span>Reset PIN</span>
+                          </button>
+                        )}
+
+                        {/* Switch Account */}
+                        {!isCurrent && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveUserId(m.id)}
+                            className="text-slate-600 hover:text-slate-900 bg-slate-100 px-2 py-0.5 rounded font-medium"
+                          >
+                            Switch
+                          </button>
+                        )}
+
+                        {/* Remove account (Admin only) */}
+                        {isFounder && !isItemFounder && teamMembers.length > 2 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (confirm(`Remove account for ${m.name}?`)) {
+                                deleteTeamMember(m.id);
+                              }
+                            }}
+                            className="text-slate-400 hover:text-red-600 p-1"
+                            title="Remove account"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -198,11 +297,12 @@ Log in to start collaborating, scoping, and voting on the product Kanban!`;
             </div>
           </div>
 
-          {/* Add New Teammate Form (Founders Only) */}
+          {/* Add New Team Member (Admins Only) */}
           {isFounder ? (
-            <form onSubmit={handleAdd} className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
-              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-                + Create New Team Member Account
+            <form onSubmit={handleAdd} className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center space-x-1.5">
+                <Plus className="w-3.5 h-3.5 text-blue-600" />
+                <span>Create New Team Member Account (Admin)</span>
               </h4>
 
               <div className="grid grid-cols-2 gap-3">
@@ -250,7 +350,7 @@ Log in to start collaborating, scoping, and voting on the product Kanban!`;
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-slate-700">Role Permission Tier</label>
+                  <label className="text-[11px] font-semibold text-slate-700">Permission Tier</label>
                   <select
                     value={roleType}
                     onChange={(e) => setRoleType(e.target.value as RoleType)}
@@ -266,14 +366,14 @@ Log in to start collaborating, scoping, and voting on the product Kanban!`;
 
               <div className="space-y-1">
                 <label className="text-[11px] font-semibold text-slate-700 flex justify-between">
-                  <span>Custom Passcode / PIN</span>
+                  <span>Default Temporary Passcode</span>
                   <span className="text-[10px] text-slate-400 font-normal">Defaults to username123</span>
                 </label>
                 <input
                   type="text"
                   value={passcode}
                   onChange={(e) => setPasscode(e.target.value)}
-                  placeholder="e.g. samuel2026"
+                  placeholder="e.g. samuel123"
                   className="w-full text-xs p-2 bg-white border border-slate-300 rounded-lg outline-none focus:border-blue-500 font-mono"
                 />
               </div>
@@ -287,7 +387,7 @@ Log in to start collaborating, scoping, and voting on the product Kanban!`;
                       key={av}
                       type="button"
                       onClick={() => setAvatar(av)}
-                      className={`text-lg p-1 rounded-md transition-transform ${
+                      className={`text-lg p-1.5 rounded-md transition-transform ${
                         avatar === av ? 'bg-blue-100 ring-2 ring-blue-500 scale-110' : 'hover:bg-slate-200'
                       }`}
                     >
@@ -311,6 +411,73 @@ Log in to start collaborating, scoping, and voting on the product Kanban!`;
           )}
         </div>
       </div>
+
+      {/* ADMIN PASSCODE RESET MODAL POPUP */}
+      {resettingMember && (
+        <div className="fixed inset-0 z-60 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center space-x-3 pb-3 border-b border-slate-100">
+              <div className="p-2 bg-blue-100 text-blue-800 rounded-xl">
+                <KeyRound className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  Admin Passcode Reset
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Resetting passcode for <strong>{resettingMember.name}</strong> (@{resettingMember.username})
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleAdminResetSubmit} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                  New Temporary Passcode *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={adminNewPasscode}
+                  onChange={(e) => setAdminNewPasscode(e.target.value)}
+                  placeholder="Min. 4 characters..."
+                  className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-blue-500 font-mono font-bold"
+                />
+              </div>
+
+              <div className="flex items-center space-x-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs">
+                <input
+                  type="checkbox"
+                  id="forceReset"
+                  checked={forceResetCheck}
+                  onChange={(e) => setForceResetCheck(e.target.checked)}
+                  className="rounded text-blue-600"
+                />
+                <label htmlFor="forceReset" className="text-slate-700 font-medium">
+                  Force user to choose their own private passcode on next login
+                </label>
+              </div>
+
+              <div className="pt-2 flex space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setResettingMember(null)}
+                  className="flex-1 py-2 text-xs text-slate-600 hover:bg-slate-100 rounded-lg font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm flex items-center justify-center space-x-1"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Confirm Reset</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
