@@ -59,6 +59,10 @@ interface AppContextType {
   activeView: ActiveView;
   setActiveView: (view: ActiveView) => void;
 
+  isSidebarCollapsed: boolean;
+  setIsSidebarCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
+  toggleSidebar: () => void;
+
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   selectedPriority: Priority | 'all';
@@ -98,6 +102,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [activeView, setActiveView] = useState<ActiveView>('kanban');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+  const toggleSidebar = () => setIsSidebarCollapsed((prev) => !prev);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedPriority, setSelectedPriority] = useState<Priority | 'all'>('all');
   const [selectedTag, setSelectedTag] = useState<string | 'all'>('all');
@@ -584,6 +590,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         activeView,
         setActiveView,
+        isSidebarCollapsed,
+        setIsSidebarCollapsed,
+        toggleSidebar,
 
         searchQuery,
         setSearchQuery,

@@ -240,11 +240,9 @@ Log in to start collaborating, scoping, and voting on the product Kanban!`;
                     {/* Actions Bar */}
                     <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
                       <div className="text-slate-400">
-                        {isFounder && (
-                          <span className="font-mono text-[10px] text-slate-500">
-                            PIN: <span className="bg-slate-100 px-1 py-0.2 rounded font-bold text-slate-700">{m.passcode}</span>
-                          </span>
-                        )}
+                        <span className="text-[10px] text-slate-500 capitalize">
+                          Tier: <strong className="text-slate-700">{m.roleType}</strong>
+                        </span>
                       </div>
 
                       <div className="flex items-center space-x-2">

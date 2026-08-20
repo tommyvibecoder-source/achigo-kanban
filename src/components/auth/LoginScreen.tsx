@@ -146,8 +146,8 @@ export const LoginScreen: React.FC = () => {
                 <span className="text-lg">{m.avatar}</span>
                 <div className="truncate">
                   <div className="font-bold text-slate-900 truncate">{m.name}</div>
-                  <div className="text-[10px] text-slate-500 truncate font-mono">
-                    {m.username} • {m.passcode}
+                  <div className="text-[10px] text-slate-500 truncate">
+                    @{m.username} • {m.roleType === 'founder' ? '👑 Founder' : m.role.split(' ')[0]}
                   </div>
                 </div>
               </button>

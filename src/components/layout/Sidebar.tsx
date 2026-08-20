@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   LayoutGrid,
@@ -28,9 +28,9 @@ export const Sidebar: React.FC = () => {
     ideas,
     activeUser,
     logout,
+    isSidebarCollapsed,
+    setIsSidebarCollapsed,
   } = useApp();
-
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const navItems: { id: ActiveView; label: string; icon: React.FC<{ className?: string }>; badge?: number }[] = [
     {
@@ -61,13 +61,13 @@ export const Sidebar: React.FC = () => {
   return (
     <aside
       className={`bg-slate-900 text-slate-300 border-r border-slate-800 transition-all duration-200 flex flex-col h-full select-none shrink-0 ${
-        isCollapsed ? 'w-16' : 'w-64'
+        isSidebarCollapsed ? 'w-16' : 'w-64'
       }`}
     >
       {/* Scrollable Middle Body */}
       <div className="flex-1 overflow-y-auto p-3 space-y-5 scrollbar-thin scrollbar-thumb-slate-700">
         {/* Project Header Info */}
-        {!isCollapsed ? (
+        {!isSidebarCollapsed ? (
           <div className="px-2 py-1 bg-slate-800/60 rounded-lg p-2.5 border border-slate-800">
             <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
               <span>Active Project Space</span>
@@ -110,7 +110,7 @@ export const Sidebar: React.FC = () => {
 
         {/* View Switchers */}
         <div className="space-y-1">
-          {!isCollapsed && (
+          {!isSidebarCollapsed && (
             <div className="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
               Views
             </div>
@@ -123,19 +123,19 @@ export const Sidebar: React.FC = () => {
                 key={item.id}
                 onClick={() => setActiveView(item.id)}
                 className={`w-full flex items-center ${
-                  isCollapsed ? 'justify-center py-2.5 px-0' : 'justify-between px-3 py-2'
+                  isSidebarCollapsed ? 'justify-center py-2.5 px-0' : 'justify-between px-3 py-2'
                 } rounded-md text-xs font-medium transition-colors ${
                   isActive
                     ? 'bg-blue-600 text-white shadow-sm'
                     : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                 }`}
-                title={isCollapsed ? item.label : undefined}
+                title={isSidebarCollapsed ? item.label : undefined}
               >
                 <div className="flex items-center space-x-2.5">
                   <Icon className="w-4 h-4 shrink-0" />
-                  {!isCollapsed && <span>{item.label}</span>}
+                  {!isSidebarCollapsed && <span>{item.label}</span>}
                 </div>
-                {!isCollapsed && item.badge !== undefined && (
+                {!isSidebarCollapsed && item.badge !== undefined && (
                   <span
                     className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold ${
                       isActive ? 'bg-blue-800 text-blue-100' : 'bg-slate-800 text-slate-400'
@@ -150,7 +150,7 @@ export const Sidebar: React.FC = () => {
         </div>
 
         {/* Multi-Project Spaces List */}
-        {!isCollapsed && (
+        {!isSidebarCollapsed && (
           <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
             <div className="flex items-center justify-between px-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
@@ -195,7 +195,7 @@ export const Sidebar: React.FC = () => {
         )}
 
         {/* Team Roster Snapshot */}
-        {!isCollapsed && (
+        {!isSidebarCollapsed && (
           <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
             <div className="flex items-center justify-between px-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
@@ -233,7 +233,7 @@ export const Sidebar: React.FC = () => {
       {/* FIXED BOTTOM FOOTER (Always 100% visible) */}
       <div className="p-3 border-t border-slate-800 bg-slate-950 shrink-0 space-y-2">
         {/* User Status & Log Out Button */}
-        {!isCollapsed ? (
+        {!isSidebarCollapsed ? (
           <div className="flex items-center justify-between bg-slate-900 p-2 rounded-lg border border-slate-800">
             <div className="flex items-center space-x-2 truncate">
               <span className="text-sm">{activeUser.avatar}</span>
@@ -264,11 +264,11 @@ export const Sidebar: React.FC = () => {
 
         {/* Collapse Toggle Button */}
         <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
+          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           className="w-full py-1.5 px-2 text-xs text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors flex items-center justify-center space-x-1.5"
-          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {isCollapsed ? (
+          {isSidebarCollapsed ? (
             <ChevronRight className="w-4 h-4" />
           ) : (
             <>
