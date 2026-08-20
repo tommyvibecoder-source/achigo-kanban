@@ -59,9 +59,27 @@ export const PrdView: React.FC = () => {
   const author = teamMembers.find((m) => m.id === selectedIdea.authorId);
 
   return (
-    <div className="flex-1 flex overflow-hidden bg-white">
-      {/* Left PRD Document Tree (Confluence-style navigation) */}
-      <div className="w-72 border-r border-slate-200 bg-slate-50/70 p-3 overflow-y-auto shrink-0 flex flex-col space-y-1">
+    <div className="flex-1 flex flex-col md:flex-row overflow-hidden bg-white">
+      {/* Mobile Spec Picker Dropdown */}
+      <div className="md:hidden p-3 bg-slate-50 border-b border-slate-200">
+        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+          Select PRD Spec:
+        </label>
+        <select
+          value={selectedIdea.id}
+          onChange={(e) => setSelectedIdeaId(e.target.value)}
+          className="w-full text-xs p-2 bg-white border border-slate-300 rounded-lg outline-none focus:border-blue-500 font-medium"
+        >
+          {filteredIdeas.map((i) => (
+            <option key={i.id} value={i.id}>
+              {i.issueKey} — {i.title}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Left PRD Document Tree (Desktop Confluence-style navigation) */}
+      <div className="hidden md:flex w-72 border-r border-slate-200 bg-slate-50/70 p-3 overflow-y-auto shrink-0 flex-col space-y-1">
         <div className="px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
           <span>Living PRD Specs</span>
           <span className="font-mono bg-slate-200/80 px-1.5 py-0.2 rounded text-[10px]">
@@ -99,7 +117,7 @@ export const PrdView: React.FC = () => {
       </div>
 
       {/* Main Confluence Document Reading & Deliberation Canvas */}
-      <div className="flex-1 overflow-y-auto p-8 bg-white">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-white">
         <div className="max-w-3xl mx-auto space-y-8">
           {/* Breadcrumbs & Actions */}
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">

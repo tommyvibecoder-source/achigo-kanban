@@ -108,13 +108,13 @@ export const BacklogView: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 bg-slate-50 p-6 overflow-y-auto">
-      <div className="max-w-5xl mx-auto space-y-6">
+    <div className="flex-1 bg-slate-50 p-3 sm:p-6 overflow-y-auto">
+      <div className="max-w-5xl mx-auto space-y-4 sm:space-y-6">
         {/* Page Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center space-x-2">
-              <ListTodo className="w-5 h-5 text-blue-600" />
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight flex items-center space-x-2">
+              <ListTodo className="w-5 h-5 text-blue-600 shrink-0" />
               <span>Backlog Planning — {activeProject?.name}</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -123,7 +123,7 @@ export const BacklogView: React.FC = () => {
           </div>
           <button
             onClick={() => setIsNewIdeaModalOpen(true)}
-            className="flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-lg text-xs font-bold shadow-sm transition-all"
+            className="flex items-center justify-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-lg text-xs font-bold shadow-xs transition-all w-full sm:w-auto"
           >
             <Plus className="w-4 h-4" />
             <span>+ Add Idea to Backlog</span>

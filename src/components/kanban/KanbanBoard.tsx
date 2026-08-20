@@ -93,23 +93,23 @@ export const KanbanBoard: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-slate-50 relative">
-      {/* Top Filter Bar */}
-      <div className="bg-white border-b border-slate-200 px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center space-x-1 text-slate-400 text-xs mr-1">
-            <Filter className="w-3.5 h-3.5" />
-            <span className="font-semibold text-slate-600">Filters:</span>
+      {/* Top Filter Bar (Scrollable on Mobile) */}
+      <div className="bg-white border-b border-slate-200 px-3 sm:px-6 py-2 flex items-center justify-between gap-3 shrink-0 overflow-x-auto no-scrollbar">
+        <div className="flex items-center space-x-2 shrink-0">
+          <div className="flex items-center space-x-1 text-slate-400 text-xs">
+            <Filter className="w-3.5 h-3.5 shrink-0" />
+            <span className="font-semibold text-slate-600 hidden sm:inline">Filters:</span>
           </div>
 
           {/* Issue Type Filter Pills */}
-          <div className="flex items-center space-x-1 bg-slate-100 p-0.5 rounded-md border border-slate-200 text-xs">
-            {(['all', 'feature', 'bug', 'improvement', 'research', 'task', 'security'] as (IssueType | 'all')[]).map((t) => (
+          <div className="flex items-center space-x-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs shrink-0">
+            {(['all', 'feature', 'bug', 'improvement', 'task'] as (IssueType | 'all')[]).map((t) => (
               <button
                 key={t}
                 onClick={() => setSelectedIssueType(t)}
                 className={`px-2 py-1 rounded text-[11px] font-medium capitalize transition-colors ${
                   selectedIssueType === t
-                    ? 'bg-white text-blue-700 shadow-sm font-semibold'
+                    ? 'bg-white text-blue-700 shadow-xs font-semibold'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -119,14 +119,14 @@ export const KanbanBoard: React.FC = () => {
           </div>
 
           {/* Priority filter pills */}
-          <div className="flex items-center space-x-1 bg-slate-100 p-0.5 rounded-md border border-slate-200 text-xs">
+          <div className="flex items-center space-x-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs shrink-0">
             {(['all', 'critical', 'high', 'medium', 'low'] as (Priority | 'all')[]).map((p) => (
               <button
                 key={p}
                 onClick={() => setSelectedPriority(p)}
                 className={`px-2 py-1 rounded text-[11px] font-medium capitalize transition-colors ${
                   selectedPriority === p
-                    ? 'bg-white text-blue-700 shadow-sm font-semibold'
+                    ? 'bg-white text-blue-700 shadow-xs font-semibold'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -140,7 +140,7 @@ export const KanbanBoard: React.FC = () => {
             <select
               value={selectedTag}
               onChange={(e) => setSelectedTag(e.target.value)}
-              className="text-xs bg-slate-100 border border-slate-200 text-slate-700 rounded-md px-2 py-1 outline-none focus:border-blue-400"
+              className="text-xs bg-slate-100 border border-slate-200 text-slate-700 rounded-lg px-2 py-1 outline-none focus:border-blue-400 shrink-0"
             >
               <option value="all">All Tags ({availableTags.length})</option>
               {availableTags.map((tag) => (
@@ -158,30 +158,30 @@ export const KanbanBoard: React.FC = () => {
                 setSelectedTag('all');
                 setSelectedIssueType('all');
               }}
-              className="text-xs text-blue-600 hover:underline font-medium ml-1"
+              className="text-xs text-blue-600 hover:underline font-medium ml-1 shrink-0"
             >
-              Clear filters
+              Clear
             </button>
           )}
         </div>
 
         {/* Board Stats & Slogan */}
-        <div className="flex items-center space-x-4 text-xs text-slate-500">
+        <div className="flex items-center space-x-3 text-xs text-slate-500 shrink-0">
           <div className="hidden lg:flex items-center space-x-1.5 bg-blue-50/80 text-blue-800 border border-blue-200 px-2.5 py-1 rounded-md">
             <ShieldCheck className="w-4 h-4 text-blue-600" />
             <span className="text-[11px] font-medium">
               AchiGO Kanban for {activeProject?.name}
             </span>
           </div>
-          <span className="font-semibold text-slate-700">
-            {displayedIdeas.length} item{displayedIdeas.length === 1 ? '' : 's'}
+          <span className="font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full text-[11px]">
+            {displayedIdeas.length} card{displayedIdeas.length === 1 ? '' : 's'}
           </span>
         </div>
       </div>
 
-      {/* Kanban Columns Canvas */}
-      <div className="flex-1 p-6 overflow-x-auto overflow-y-hidden">
-        <div className="flex space-x-4 h-full min-w-max pb-4">
+      {/* Kanban Columns Canvas (Optimized for Mobile Touch Horizontal Scroll) */}
+      <div className="flex-1 p-2.5 sm:p-4 md:p-6 overflow-x-auto overflow-y-hidden scroll-smooth snap-x snap-mandatory">
+        <div className="flex space-x-3 sm:space-x-4 h-full min-w-max pb-2">
           {columns.map((col) => {
             const columnIdeas = displayedIdeas.filter((i) => i.stage === col.stage);
             return (
@@ -199,32 +199,21 @@ export const KanbanBoard: React.FC = () => {
         </div>
       </div>
 
-      {/* Toast Alert */}
+      {/* Toast feedback alerts */}
       {toastMessage && (
         <div
-          className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-lg shadow-2xl border text-xs max-w-md flex items-start space-x-3 animate-in fade-in slide-in-from-bottom-3 ${
+          className={`fixed bottom-5 right-5 max-w-sm z-50 p-4 rounded-xl shadow-2xl border text-xs flex items-center space-x-3 animate-in fade-in slide-in-from-bottom-3 duration-200 ${
             toastMessage.type === 'error'
               ? 'bg-rose-900 text-white border-rose-700'
-              : 'bg-slate-900 text-white border-slate-700'
+              : 'bg-emerald-900 text-white border-emerald-700'
           }`}
         >
           {toastMessage.type === 'error' ? (
-            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <AlertTriangle className="w-5 h-5 text-rose-300 shrink-0" />
           ) : (
-            <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+            <ShieldCheck className="w-5 h-5 text-emerald-300 shrink-0" />
           )}
-          <div className="flex-1">
-            <div className="font-semibold text-sm">
-              {toastMessage.type === 'error' ? 'Movement Blocked' : 'Stage Updated'}
-            </div>
-            <p className="mt-0.5 text-slate-200 leading-relaxed">{toastMessage.text}</p>
-          </div>
-          <button
-            onClick={() => setToastMessage(null)}
-            className="text-slate-400 hover:text-white"
-          >
-            ×
-          </button>
+          <span className="leading-snug">{toastMessage.text}</span>
         </div>
       )}
     </div>

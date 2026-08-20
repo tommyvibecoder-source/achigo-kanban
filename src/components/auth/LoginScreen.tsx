@@ -65,26 +65,26 @@ export const LoginScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-950 flex items-center justify-center p-4 selection:bg-blue-600 selection:text-white">
-      <div className="max-w-md w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 p-8 space-y-6 animate-in fade-in zoom-in-95 duration-200">
+    <div className="min-h-screen w-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-950 flex items-center justify-center p-3 sm:p-4 selection:bg-blue-600 selection:text-white">
+      <div className="max-w-md w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 p-5 sm:p-8 space-y-5 sm:space-y-6 animate-in fade-in zoom-in-95 duration-200 my-auto">
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center p-3 bg-gradient-to-r from-blue-700 via-indigo-600 to-violet-700 text-white rounded-xl shadow-md">
-            <FolderKanban className="w-8 h-8 text-sky-300" />
+          <div className="inline-flex items-center justify-center p-2.5 sm:p-3 bg-gradient-to-r from-blue-700 via-indigo-600 to-violet-700 text-white rounded-xl shadow-md">
+            <FolderKanban className="w-7 h-7 sm:w-8 h-8 text-sky-300" />
           </div>
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900">AchiGO</h1>
-            <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600 mt-0.5">
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">AchiGO</h1>
+            <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-indigo-600 mt-0.5">
               Achieve • Grow • Outscale
             </p>
           </div>
-          <p className="text-xs text-slate-500 max-w-xs mx-auto">
+          <p className="text-[11px] sm:text-xs text-slate-500 max-w-xs mx-auto">
             Collaborative Tech Production Kanban for AchiGO Projects
           </p>
         </div>
 
         {/* Standard Login Form */}
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-3 sm:space-y-4">
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-800 uppercase tracking-wide">
               Username or Email
@@ -95,7 +95,7 @@ export const LoginScreen: React.FC = () => {
               value={usernameInput}
               onChange={(e) => setUsernameInput(e.target.value)}
               placeholder="e.g. zogo or achiri"
-              className="w-full text-xs p-3 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:bg-white transition-all font-medium"
+              className="w-full text-xs p-2.5 sm:p-3 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:bg-white transition-all font-medium"
             />
           </div>
 
@@ -110,7 +110,7 @@ export const LoginScreen: React.FC = () => {
               value={passcodeInput}
               onChange={(e) => setPasscodeInput(e.target.value)}
               placeholder="Enter your access PIN..."
-              className="w-full text-xs p-3 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:bg-white transition-all font-mono"
+              className="w-full text-xs p-2.5 sm:p-3 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:bg-white transition-all font-mono"
             />
           </div>
 
@@ -123,7 +123,7 @@ export const LoginScreen: React.FC = () => {
 
           <button
             type="submit"
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-1.5"
+            className="w-full py-2.5 sm:py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-1.5"
           >
             <span>Enter AchiGO Workspace</span>
             <ArrowRight className="w-4 h-4" />
@@ -131,11 +131,11 @@ export const LoginScreen: React.FC = () => {
         </form>
 
         {/* Quick 1-Click Access for Team Roster with Credentials Reference */}
-        <div className="pt-4 border-t border-slate-100 space-y-2.5">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 text-center">
+        <div className="pt-3 sm:pt-4 border-t border-slate-100 space-y-2">
+          <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 text-center">
             Quick 1-Click Founder & Team Access
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
             {teamMembers.map((m) => (
               <button
                 key={m.id}

@@ -58,14 +58,14 @@ export const PriorityMatrixView: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 bg-slate-50 p-6 overflow-y-auto">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="flex-1 bg-slate-50 p-3 sm:p-6 overflow-y-auto">
+      <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center space-x-2">
-              <Target className="w-5 h-5 text-indigo-600" />
-              <span>Founder Scoring Matrix (Impact vs Simplicity)</span>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight flex items-center space-x-2">
+              <Target className="w-5 h-5 text-indigo-600 shrink-0" />
+              <span>Founder Scoring Matrix</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
               Visualize your startup ideas across Value/Impact and Implementation Simplicity to decide what to build first.
