@@ -123,10 +123,10 @@ export const BacklogView: React.FC = () => {
           </div>
           <button
             onClick={() => setIsNewIdeaModalOpen(true)}
-            className="flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-sm transition-all"
+            className="flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-lg text-xs font-bold shadow-sm transition-all"
           >
             <Plus className="w-4 h-4" />
-            <span>Scope New Idea</span>
+            <span>+ Add Idea to Backlog</span>
           </button>
         </div>
 

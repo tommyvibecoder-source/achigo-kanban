@@ -10,7 +10,8 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Settings
+  Settings,
+  Plus
 } from 'lucide-react';
 import { ActiveView } from '../../types';
 
@@ -30,6 +31,7 @@ export const Sidebar: React.FC = () => {
     logout,
     isSidebarCollapsed,
     setIsSidebarCollapsed,
+    setIsNewIdeaModalOpen,
   } = useApp();
 
   const navItems: { id: ActiveView; label: string; icon: React.FC<{ className?: string }>; badge?: number }[] = [
@@ -92,9 +94,16 @@ export const Sidebar: React.FC = () => {
             <div className="text-[10px] text-slate-400 mt-0.5 line-clamp-2">
               {activeProject?.description}
             </div>
+            <button
+              onClick={() => setIsNewIdeaModalOpen(true)}
+              className="mt-2 w-full py-1.5 px-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-xs font-bold flex items-center justify-center space-x-1.5 shadow-xs transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>+ Add to Backlog</span>
+            </button>
           </div>
         ) : (
-          <div className="flex justify-center py-1">
+          <div className="flex flex-col items-center space-y-2 py-1">
             <button
               onClick={() => setIsProjectModalOpen(true)}
               className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center hover:bg-slate-700 transition-colors"
@@ -104,6 +113,13 @@ export const Sidebar: React.FC = () => {
                 className="w-3.5 h-3.5 rounded-xs"
                 style={{ backgroundColor: activeProject?.color || '#0052CC' }}
               />
+            </button>
+            <button
+              onClick={() => setIsNewIdeaModalOpen(true)}
+              className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center hover:bg-blue-500 transition-colors shadow-xs"
+              title="Add Idea to Backlog"
+            >
+              <Plus className="w-4 h-4" />
             </button>
           </div>
         )}

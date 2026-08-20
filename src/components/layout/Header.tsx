@@ -352,14 +352,15 @@ export const Header: React.FC = () => {
           )}
         </div>
 
-        {/* Primary Action: + New Idea */}
+        {/* Primary Action: + Add Idea to Backlog */}
         <button
           onClick={() => setIsNewIdeaModalOpen(true)}
-          className="flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-3 py-1.5 rounded-md text-xs font-semibold shadow-sm transition-all hover:shadow"
+          className="flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all hover:shadow-md ring-1 ring-blue-500"
+          title="Add a new feature, bug, or improvement to the backlog"
         >
           <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">Scope New Idea</span>
-          <span className="sm:hidden">New</span>
+          <span className="hidden sm:inline">+ Add Idea to Backlog</span>
+          <span className="sm:hidden">+ Idea</span>
         </button>
       </div>
 
