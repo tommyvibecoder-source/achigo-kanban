@@ -9,7 +9,8 @@ import {
   FolderPlus,
   ChevronLeft,
   ChevronRight,
-  ShieldCheck
+  LogOut,
+  Settings
 } from 'lucide-react';
 import { ActiveView } from '../../types';
 
@@ -25,6 +26,8 @@ export const Sidebar: React.FC = () => {
     setIsTeamModalOpen,
     filteredIdeas,
     ideas,
+    activeUser,
+    logout,
   } = useApp();
 
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -57,38 +60,51 @@ export const Sidebar: React.FC = () => {
 
   return (
     <aside
-      className={`bg-slate-900 text-slate-300 border-r border-slate-800 transition-all duration-200 flex flex-col justify-between select-none ${
+      className={`bg-slate-900 text-slate-300 border-r border-slate-800 transition-all duration-200 flex flex-col h-full select-none shrink-0 ${
         isCollapsed ? 'w-16' : 'w-64'
       }`}
     >
-      {/* Top Part: Navigation Links */}
-      <div className="p-3 space-y-6">
+      {/* Scrollable Middle Body */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-5 scrollbar-thin scrollbar-thumb-slate-700">
         {/* Project Header Info */}
         {!isCollapsed ? (
-          <div className="px-2 py-1">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-              Project Space
+          <div className="px-2 py-1 bg-slate-800/60 rounded-lg p-2.5 border border-slate-800">
+            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+              <span>Active Project Space</span>
+              <button
+                onClick={() => setIsProjectModalOpen(true)}
+                className="text-blue-400 hover:text-blue-300 flex items-center space-x-0.5"
+                title="Manage / Delete Projects"
+              >
+                <Settings className="w-3 h-3" />
+                <span className="capitalize text-[10px]">Manage</span>
+              </button>
             </div>
             <div className="flex items-center space-x-2">
               <span
                 className="w-3 h-3 rounded-sm shrink-0"
                 style={{ backgroundColor: activeProject?.color || '#0052CC' }}
               />
-              <span className="font-semibold text-white text-sm truncate">
+              <span className="font-bold text-white text-xs truncate">
                 {activeProject?.name}
               </span>
             </div>
-            <div className="text-[11px] text-slate-400 mt-0.5 line-clamp-2">
+            <div className="text-[10px] text-slate-400 mt-0.5 line-clamp-2">
               {activeProject?.description}
             </div>
           </div>
         ) : (
           <div className="flex justify-center py-1">
-            <span
-              className="w-4 h-4 rounded-sm"
-              style={{ backgroundColor: activeProject?.color || '#0052CC' }}
-              title={activeProject?.name}
-            />
+            <button
+              onClick={() => setIsProjectModalOpen(true)}
+              className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center hover:bg-slate-700 transition-colors"
+              title={`Active Project: ${activeProject?.name}`}
+            >
+              <span
+                className="w-3.5 h-3.5 rounded-xs"
+                style={{ backgroundColor: activeProject?.color || '#0052CC' }}
+              />
+            </button>
           </div>
         )}
 
@@ -135,20 +151,21 @@ export const Sidebar: React.FC = () => {
 
         {/* Multi-Project Spaces List */}
         {!isCollapsed && (
-          <div className="pt-2 border-t border-slate-800/80">
-            <div className="flex items-center justify-between px-2 mb-1.5">
+          <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
+            <div className="flex items-center justify-between px-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                 All Projects ({projects.length})
               </span>
               <button
                 onClick={() => setIsProjectModalOpen(true)}
-                className="text-slate-400 hover:text-blue-400 text-xs p-0.5"
-                title="Create Project"
+                className="text-slate-400 hover:text-blue-400 text-[11px] font-semibold flex items-center space-x-1"
+                title="Create or delete projects"
               >
                 <FolderPlus className="w-3.5 h-3.5" />
+                <span>+ New</span>
               </button>
             </div>
-            <div className="space-y-0.5 max-h-40 overflow-y-auto">
+            <div className="space-y-0.5 max-h-36 overflow-y-auto scrollbar-thin">
               {projects.map((p) => {
                 const count = ideas.filter((i) => i.projectId === p.id).length;
                 const isSelected = p.id === activeProject?.id;
@@ -179,17 +196,18 @@ export const Sidebar: React.FC = () => {
 
         {/* Team Roster Snapshot */}
         {!isCollapsed && (
-          <div className="pt-2 border-t border-slate-800/80">
-            <div className="flex items-center justify-between px-2 mb-1.5">
+          <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
+            <div className="flex items-center justify-between px-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                Team Consensus ({teamMembers.length})
+                Team Roster ({teamMembers.length})
               </span>
               <button
                 onClick={() => setIsTeamModalOpen(true)}
-                className="text-slate-400 hover:text-blue-400 text-xs p-0.5"
-                title="Manage Team"
+                className="text-slate-400 hover:text-blue-400 text-[11px] font-semibold flex items-center space-x-1"
+                title="Manage Team & Passcodes"
               >
                 <Users className="w-3.5 h-3.5" />
+                <span>Manage</span>
               </button>
             </div>
             <div className="space-y-1">
@@ -203,7 +221,7 @@ export const Sidebar: React.FC = () => {
                     <span className="truncate text-[11px] font-medium">{m.name}</span>
                   </div>
                   <span className="text-[9px] text-slate-400 truncate max-w-[80px]">
-                    {m.role.split(' ')[0]}
+                    {m.roleType === 'founder' ? '👑 Founder' : m.role.split(' ')[0]}
                   </span>
                 </div>
               ))}
@@ -212,20 +230,52 @@ export const Sidebar: React.FC = () => {
         )}
       </div>
 
-      {/* Bottom: Collapse Button */}
-      <div className="p-3 border-t border-slate-800 flex items-center justify-between">
+      {/* FIXED BOTTOM FOOTER (Always 100% visible) */}
+      <div className="p-3 border-t border-slate-800 bg-slate-950 shrink-0 space-y-2">
+        {/* User Status & Log Out Button */}
         {!isCollapsed ? (
-          <div className="text-[10px] text-slate-500 font-medium flex items-center space-x-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Unanimous Gate Active</span>
+          <div className="flex items-center justify-between bg-slate-900 p-2 rounded-lg border border-slate-800">
+            <div className="flex items-center space-x-2 truncate">
+              <span className="text-sm">{activeUser.avatar}</span>
+              <div className="truncate">
+                <div className="text-xs font-bold text-white truncate">{activeUser.name}</div>
+                <div className="text-[10px] text-slate-400 capitalize truncate">
+                  {activeUser.roleType === 'founder' ? '👑 Founder' : activeUser.role}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={logout}
+              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors"
+              title="Log out of AchiGO workspace"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
-        ) : null}
+        ) : (
+          <button
+            onClick={logout}
+            className="w-full flex items-center justify-center p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors"
+            title={`Log out (${activeUser.name})`}
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        )}
+
+        {/* Collapse Toggle Button */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors mx-auto"
+          className="w-full py-1.5 px-2 text-xs text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors flex items-center justify-center space-x-1.5"
           title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          {isCollapsed ? (
+            <ChevronRight className="w-4 h-4" />
+          ) : (
+            <>
+              <ChevronLeft className="w-4 h-4" />
+              <span className="text-[11px] font-medium">Collapse Sidebar</span>
+            </>
+          )}
         </button>
       </div>
     </aside>

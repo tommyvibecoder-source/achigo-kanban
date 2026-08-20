@@ -11,7 +11,8 @@ import {
   RotateCcw,
   FolderPlus,
   CheckCircle2,
-  Lock
+  Lock,
+  LogOut
 } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -127,7 +128,7 @@ export const Header: React.FC = () => {
                     </span>
                   </button>
                 ))}
-                <div className="border-t border-slate-100 mt-1 pt-1 px-1">
+                <div className="border-t border-slate-100 mt-1 pt-1 px-1 space-y-0.5">
                   <button
                     onClick={() => {
                       setIsProjectDropdownOpen(false);
@@ -137,6 +138,17 @@ export const Header: React.FC = () => {
                   >
                     <FolderPlus className="w-4 h-4" />
                     <span>+ New Project Space</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsProjectDropdownOpen(false);
+                      setIsProjectModalOpen(true);
+                    }}
+                    className="w-full text-left px-2.5 py-1.5 text-xs text-slate-600 hover:bg-slate-50 rounded flex items-center space-x-2 font-medium"
+                  >
+                    <FolderKanban className="w-4 h-4 text-slate-400" />
+                    <span>Manage / Delete Projects</span>
                   </button>
                 </div>
               </div>
@@ -242,6 +254,15 @@ export const Header: React.FC = () => {
             </>
           )}
         </div>
+
+        {/* 1-Click Direct Logout Button */}
+        <button
+          onClick={logout}
+          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md border border-slate-200 transition-colors"
+          title={`Log out of workspace (${activeUser.name})`}
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
 
         {/* Data / Import / Export Dropdown */}
         <div className="relative">
