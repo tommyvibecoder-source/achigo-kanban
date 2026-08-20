@@ -11,7 +11,9 @@ import {
   Search,
   CheckSquare,
   Palette,
-  ShieldAlert
+  ShieldAlert,
+  Wrench,
+  CheckCircle2
 } from 'lucide-react';
 
 interface TemplateOption {
@@ -39,7 +41,29 @@ export const NewIdeaModal: React.FC = () => {
     createIdea,
     activeProject,
     activeUser,
+    teamMembers,
   } = useApp();
+
+  // Mode: 'quick_task' (ordinary, no scoring, no consensus) vs 'full_spec' (scored, consensus)
+  const [mode, setMode] = useState<'quick_task' | 'full_spec'>('quick_task');
+
+  // Form Fields
+  const [title, setTitle] = useState('');
+  const [issueType, setIssueType] = useState<IssueType>('task');
+  const [summary, setSummary] = useState('');
+  const [targetAudience, setTargetAudience] = useState('');
+  const [painPoint, setPainPoint] = useState('');
+  const [proposedSolution, setProposedSolution] = useState('');
+  const [valueProposition, setValueProposition] = useState('');
+  const [priority, setPriority] = useState<Priority>('medium');
+  const [assigneeId, setAssigneeId] = useState<string>(activeUser.id);
+  const [tagsInput, setTagsInput] = useState('Task');
+  const [successCriteria, setSuccessCriteria] = useState<string[]>([
+    'Task completed and verified',
+  ]);
+
+  const [impact, setImpact] = useState(3);
+  const [simplicity, setSimplicity] = useState(4);
 
   const templates: TemplateOption[] = [
     {
@@ -104,47 +128,27 @@ export const NewIdeaModal: React.FC = () => {
     },
   ];
 
-  const [title, setTitle] = useState('');
-  const [issueType, setIssueType] = useState<IssueType>('feature');
-  const [summary, setSummary] = useState('');
-  const [targetAudience, setTargetAudience] = useState('');
-  const [painPoint, setPainPoint] = useState('');
-  const [proposedSolution, setProposedSolution] = useState('');
-  const [valueProposition, setValueProposition] = useState('');
-  const [priority, setPriority] = useState<Priority>('high');
-  const [tagsInput, setTagsInput] = useState('Core Product');
-  const [successCriteria, setSuccessCriteria] = useState<string[]>([
-    'Meets user story acceptance criteria',
-    'Passes automated unit tests',
-  ]);
-
-  const [impact, setImpact] = useState(4);
-  const [simplicity, setSimplicity] = useState(4);
-
   const resetForm = () => {
     setTitle('');
-    setIssueType('feature');
+    setIssueType(mode === 'quick_task' ? 'task' : 'feature');
     setSummary('');
     setTargetAudience('');
     setPainPoint('');
     setProposedSolution('');
     setValueProposition('');
-    setPriority('high');
-    setTagsInput('Core Product');
-    setSuccessCriteria([
-      'Meets user story acceptance criteria',
-      'Passes automated unit tests',
-    ]);
-    setImpact(4);
+    setPriority('medium');
+    setAssigneeId(activeUser.id);
+    setTagsInput(mode === 'quick_task' ? 'Chore, Config' : 'Core Product');
+    setSuccessCriteria(['Task completed and verified']);
+    setImpact(3);
     setSimplicity(4);
   };
 
-  // Reset form whenever modal opens
   useEffect(() => {
     if (isNewIdeaModalOpen) {
       resetForm();
     }
-  }, [isNewIdeaModalOpen]);
+  }, [isNewIdeaModalOpen, mode]);
 
   if (!isNewIdeaModalOpen) return null;
 
@@ -154,6 +158,7 @@ export const NewIdeaModal: React.FC = () => {
   };
 
   const applyTemplate = (t: TemplateOption) => {
+    setMode('full_spec');
     setTitle(t.defaults.title);
     setIssueType(t.issueType);
     setSummary(t.defaults.summary);
@@ -168,11 +173,12 @@ export const NewIdeaModal: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !painPoint.trim()) {
-      alert('Please provide an Item Title and Problem/Need description.');
+    if (!title.trim()) {
+      alert('Please provide a Task / Item Title.');
       return;
     }
 
+    const isQuick = mode === 'quick_task';
     const tags = tagsInput
       .split(',')
       .map((t) => t.trim())
@@ -181,23 +187,26 @@ export const NewIdeaModal: React.FC = () => {
     createIdea({
       projectId: activeProject?.id || 'proj-1',
       title: title.trim(),
-      issueType,
+      issueType: isQuick ? 'task' : issueType,
+      isQuickTask: isQuick,
+      requiresConsensus: !isQuick, // Ordinary tasks do NOT require consensus
       stage: 'backlog',
       priority,
       summary: summary.trim() || title.trim(),
-      targetAudience: targetAudience.trim() || 'AchiGO users & team',
-      painPoint: painPoint.trim(),
-      proposedSolution: proposedSolution.trim() || summary.trim(),
-      valueProposition: valueProposition.trim() || 'Solves key user friction point',
-      successCriteria: successCriteria.length > 0 ? successCriteria : ['Verified and complete'],
+      targetAudience: isQuick ? 'Internal Team' : targetAudience.trim() || 'AchiGO users & team',
+      painPoint: isQuick ? (summary.trim() || 'General maintenance / configuration task') : painPoint.trim() || title.trim(),
+      proposedSolution: isQuick ? summary.trim() : proposedSolution.trim() || summary.trim(),
+      valueProposition: isQuick ? 'System stability and configuration maintenance' : valueProposition.trim() || 'Solves key user friction point',
+      successCriteria: isQuick ? ['Task complete'] : successCriteria.length > 0 ? successCriteria : ['Verified and complete'],
       founderScore: {
-        userImpact: impact,
-        marketUrgency: 4,
-        implementationSimplicity: simplicity,
-        strategicFit: 4,
+        userImpact: isQuick ? 3 : impact,
+        marketUrgency: isQuick ? 3 : 4,
+        implementationSimplicity: isQuick ? 5 : simplicity,
+        strategicFit: isQuick ? 3 : 4,
       },
       authorId: activeUser.id,
-      tags,
+      assigneeId,
+      tags: tags.length > 0 ? tags : [isQuick ? 'Task' : 'Product'],
     });
 
     resetForm();
@@ -206,19 +215,21 @@ export const NewIdeaModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 md:p-6">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full flex flex-col max-h-[92vh] overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[92vh] overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
           <div className="flex items-center space-x-2.5">
-            <div className="p-2 bg-blue-600 text-white rounded-lg">
-              <Lightbulb className="w-5 h-5" />
+            <div className={`p-2 rounded-lg text-white ${mode === 'quick_task' ? 'bg-amber-600' : 'bg-blue-600'}`}>
+              {mode === 'quick_task' ? <Wrench className="w-5 h-5" /> : <Lightbulb className="w-5 h-5" />}
             </div>
             <div>
               <h3 className="font-bold text-sm text-slate-900">
-                Scope New Item for {activeProject?.name}
+                {mode === 'quick_task' ? 'Add Ordinary / Quick Task' : `Scope Product Feature for ${activeProject?.name}`}
               </h3>
               <p className="text-xs text-slate-500">
-                Create a feature, bug report, improvement, or spike for AchiGO projects
+                {mode === 'quick_task'
+                  ? 'Quick task for configuration, chores, or maintenance (No consensus needed)'
+                  : 'Full product specification with founder scoring and team consensus'}
               </p>
             </div>
           </div>
@@ -230,230 +241,290 @@ export const NewIdeaModal: React.FC = () => {
           </button>
         </div>
 
+        {/* Mode Selector Switcher Tab */}
+        <div className="p-2.5 bg-slate-100/70 border-b border-slate-200 flex space-x-2">
+          <button
+            type="button"
+            onClick={() => setMode('quick_task')}
+            className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center space-x-2 transition-all ${
+              mode === 'quick_task'
+                ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
+                : 'text-slate-600 hover:bg-slate-200/60'
+            }`}
+          >
+            <Wrench className="w-4 h-4 text-amber-600" />
+            <span>⚡ Ordinary Task (No Consensus)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMode('full_spec')}
+            className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center space-x-2 transition-all ${
+              mode === 'full_spec'
+                ? 'bg-white text-blue-900 shadow-xs border border-slate-200'
+                : 'text-slate-600 hover:bg-slate-200/60'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-blue-600" />
+            <span>✨ Full Product Spec (Scored & Consensus)</span>
+          </button>
+        </div>
+
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6 flex-1">
-          {/* Quick Starter Templates */}
-          <div className="space-y-2">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span>Or Choose a Starter Template:</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-              {templates.map((tpl) => {
-                const Icon = tpl.icon;
-                return (
-                  <button
-                    key={tpl.id}
-                    type="button"
-                    onClick={() => applyTemplate(tpl)}
-                    className="p-2.5 rounded-xl border border-slate-200 hover:border-blue-500 bg-slate-50 hover:bg-blue-50/50 text-left transition-all group"
-                  >
-                    <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-800 group-hover:text-blue-700 mb-1">
-                      <Icon className="w-3.5 h-3.5" />
-                      <span className="truncate">{tpl.title}</span>
-                    </div>
-                    <p className="text-[10px] text-slate-500 line-clamp-2">{tpl.defaults.summary}</p>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+        <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-4 flex-1">
+          {/* ============================================================ */}
+          {/* MODE 1: ORDINARY / QUICK TASK FORM (MINIMAL & FAST) */}
+          {/* ============================================================ */}
+          {mode === 'quick_task' ? (
+            <div className="space-y-4 animate-in fade-in">
+              <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl text-xs text-amber-900 flex items-center space-x-2">
+                <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>
+                  <strong>Direct Track Task:</strong> Can be moved across Kanban stages freely without requiring unanimous consensus voting or complex scoring.
+                </span>
+              </div>
 
-          {/* Issue Type Selector */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-              Issue Category / Type *
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {[
-                { type: 'feature', label: 'Feature Request', icon: Sparkles, color: 'text-blue-600 bg-blue-50 border-blue-200' },
-                { type: 'bug', label: 'Bug / Defect', icon: Bug, color: 'text-rose-600 bg-rose-50 border-rose-200' },
-                { type: 'improvement', label: 'Improvement', icon: Zap, color: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
-                { type: 'research', label: 'Tech Spike', icon: Search, color: 'text-amber-600 bg-amber-50 border-amber-200' },
-                { type: 'task', label: 'Engineering Task', icon: CheckSquare, color: 'text-indigo-600 bg-indigo-50 border-indigo-200' },
-                { type: 'design', label: 'UI/UX Design Spec', icon: Palette, color: 'text-purple-600 bg-purple-50 border-purple-200' },
-                { type: 'security', label: 'Security & Audit', icon: ShieldAlert, color: 'text-red-700 bg-red-50 border-red-200' },
-              ].map((item) => {
-                const Icon = item.icon;
-                const isSelected = issueType === item.type;
-                return (
-                  <button
-                    key={item.type}
-                    type="button"
-                    onClick={() => setIssueType(item.type as IssueType)}
-                    className={`p-2 rounded-lg border text-xs font-semibold flex items-center space-x-1.5 transition-all ${
-                      isSelected
-                        ? 'border-blue-600 bg-blue-600 text-white shadow-xs'
-                        : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
-                    }`}
-                  >
-                    <Icon className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Title & Priority */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-2 space-y-1">
-              <label className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-                Item Title *
-              </label>
-              <input
-                type="text"
-                required
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Stripe Subscription Billing Webhook Integration"
-                className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:bg-white font-medium"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-                Priority
-              </label>
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as Priority)}
-                className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:bg-white"
-              >
-                <option value="low">Low Priority</option>
-                <option value="medium">Medium Priority</option>
-                <option value="high">High Priority</option>
-                <option value="critical">Critical (Blocker)</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Pain Point (Problem Narrative) */}
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-              Problem Statement / Root Friction *
-            </label>
-            <textarea
-              required
-              rows={2}
-              value={painPoint}
-              onChange={(e) => setPainPoint(e.target.value)}
-              placeholder="What actual user pain point, failure, or business bottleneck does this address?..."
-              className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:bg-white"
-            />
-          </div>
-
-          {/* Proposed Solution Narrative */}
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-              Proposed Solution & Behavior
-            </label>
-            <textarea
-              rows={2}
-              value={proposedSolution}
-              onChange={(e) => setProposedSolution(e.target.value)}
-              placeholder="Describe how the system or user flow should behave once built..."
-              className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:bg-white"
-            />
-          </div>
-
-          {/* Value Proposition & Target Audience */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-                Target User / Persona
-              </label>
-              <input
-                type="text"
-                value={targetAudience}
-                onChange={(e) => setTargetAudience(e.target.value)}
-                placeholder="e.g. Operations leads, new signups..."
-                className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:bg-white"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-800 uppercase tracking-wide">
-                Tags (Comma separated)
-              </label>
-              <input
-                type="text"
-                value={tagsInput}
-                onChange={(e) => setTagsInput(e.target.value)}
-                placeholder="e.g. Auth, Billing, Mobile"
-                className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:bg-white"
-              />
-            </div>
-          </div>
-
-          {/* Success Criteria List */}
-          <div className="space-y-2 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-            <label className="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center justify-between">
-              <span>Acceptance Criteria Checklist</span>
-              <span className="text-[10px] text-slate-500 lowercase">Required for QA verification</span>
-            </label>
-            {successCriteria.map((crit, idx) => (
-              <div key={idx} className="flex items-center space-x-2">
+              {/* Task Title */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                  Task Title *
+                </label>
                 <input
                   type="text"
-                  value={crit}
-                  onChange={(e) => {
-                    const next = [...successCriteria];
-                    next[idx] = e.target.value;
-                    setSuccessCriteria(next);
-                  }}
-                  className="flex-1 text-xs p-2 bg-white border border-slate-300 rounded-md outline-none focus:border-blue-500"
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g. Configure Neon DB SSL & connection pooling on Vercel"
+                  className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-amber-500 focus:bg-white font-medium"
                 />
-                <button
-                  type="button"
-                  onClick={() => setSuccessCriteria(successCriteria.filter((_, i) => i !== idx))}
-                  className="text-slate-400 hover:text-red-500 p-1"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
               </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => setSuccessCriteria([...successCriteria, ''])}
-              className="text-xs text-blue-600 hover:underline font-semibold flex items-center space-x-1"
-            >
-              <Plus className="w-3 h-3" />
-              <span>Add Acceptance Criterion</span>
-            </button>
-          </div>
 
-          {/* Initial Founder Scoring Sliders */}
-          <div className="grid grid-cols-2 gap-4 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-            <div>
-              <div className="flex justify-between text-xs font-semibold text-slate-800 mb-1">
-                <span>User & Business Impact</span>
-                <span className="font-mono font-bold text-blue-600">{impact} / 5</span>
+              {/* Priority & Assignee */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                    Priority
+                  </label>
+                  <select
+                    value={priority}
+                    onChange={(e) => setPriority(e.target.value as Priority)}
+                    className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-amber-500 focus:bg-white"
+                  >
+                    <option value="low">Low Priority</option>
+                    <option value="medium">Medium Priority</option>
+                    <option value="high">High Priority</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                    Assignee
+                  </label>
+                  <select
+                    value={assigneeId}
+                    onChange={(e) => setAssigneeId(e.target.value)}
+                    className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-amber-500 focus:bg-white"
+                  >
+                    {teamMembers.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.avatar} {m.name} ({m.role})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <input
-                type="range"
-                min="1"
-                max="5"
-                value={impact}
-                onChange={(e) => setImpact(Number(e.target.value))}
-                className="w-full accent-blue-600"
-              />
-            </div>
-            <div>
-              <div className="flex justify-between text-xs font-semibold text-slate-800 mb-1">
-                <span>Implementation Simplicity</span>
-                <span className="font-mono font-bold text-emerald-600">{simplicity} / 5</span>
+
+              {/* Task Details / Configuration Notes */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                  Task Notes / Details (Optional)
+                </label>
+                <textarea
+                  rows={3}
+                  value={summary}
+                  onChange={(e) => setSummary(e.target.value)}
+                  placeholder="Add any setup steps, commands, or documentation links..."
+                  className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-amber-500 focus:bg-white"
+                />
               </div>
-              <input
-                type="range"
-                min="1"
-                max="5"
-                value={simplicity}
-                onChange={(e) => setSimplicity(Number(e.target.value))}
-                className="w-full accent-emerald-600"
-              />
+
+              {/* Tags */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                  Tags (Comma separated)
+                </label>
+                <input
+                  type="text"
+                  value={tagsInput}
+                  onChange={(e) => setTagsInput(e.target.value)}
+                  placeholder="e.g. Config, DevOps, Setup, Chore"
+                  className="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-amber-500"
+                />
+              </div>
             </div>
-          </div>
+          ) : (
+            /* ============================================================ */
+            /* MODE 2: FULL PRODUCT SPECIFICATION FORM (SCORED & CONSENSUS) */
+            /* ============================================================ */
+            <div className="space-y-5 animate-in fade-in">
+              {/* Quick Starter Templates */}
+              <div className="space-y-1.5">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Choose a Starter Template:</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  {templates.map((tpl) => {
+                    const Icon = tpl.icon;
+                    return (
+                      <button
+                        key={tpl.id}
+                        type="button"
+                        onClick={() => applyTemplate(tpl)}
+                        className="p-2 rounded-xl border border-slate-200 hover:border-blue-500 bg-slate-50 hover:bg-blue-50/50 text-left transition-all group"
+                      >
+                        <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-800 group-hover:text-blue-700 mb-0.5">
+                          <Icon className="w-3.5 h-3.5" />
+                          <span className="truncate">{tpl.title}</span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 line-clamp-2">{tpl.defaults.summary}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Issue Type Selector */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                  Issue Category / Type *
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { type: 'feature', label: 'Feature Request', icon: Sparkles },
+                    { type: 'bug', label: 'Bug / Defect', icon: Bug },
+                    { type: 'improvement', label: 'Improvement', icon: Zap },
+                    { type: 'research', label: 'Tech Spike', icon: Search },
+                    { type: 'task', label: 'Engineering Task', icon: CheckSquare },
+                    { type: 'design', label: 'UI/UX Design', icon: Palette },
+                    { type: 'security', label: 'Security Audit', icon: ShieldAlert },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    const isSelected = issueType === item.type;
+                    return (
+                      <button
+                        key={item.type}
+                        type="button"
+                        onClick={() => setIssueType(item.type as IssueType)}
+                        className={`p-2 rounded-lg border text-xs font-semibold flex items-center space-x-1.5 transition-all ${
+                          isSelected
+                            ? 'border-blue-600 bg-blue-600 text-white shadow-xs'
+                            : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        <Icon className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Title & Priority */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2 space-y-1">
+                  <label className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                    Item Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g. Stripe Subscription Billing Webhook Integration"
+                    className="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:bg-white font-medium"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                    Priority
+                  </label>
+                  <select
+                    value={priority}
+                    onChange={(e) => setPriority(e.target.value as Priority)}
+                    className="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:bg-white"
+                  >
+                    <option value="low">Low Priority</option>
+                    <option value="medium">Medium Priority</option>
+                    <option value="high">High Priority</option>
+                    <option value="critical">Critical (Blocker)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Pain Point (Problem Narrative) */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                  Problem Statement / Root Friction *
+                </label>
+                <textarea
+                  rows={2}
+                  value={painPoint}
+                  onChange={(e) => setPainPoint(e.target.value)}
+                  placeholder="What actual user pain point, failure, or business bottleneck does this address?..."
+                  className="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:bg-white"
+                />
+              </div>
+
+              {/* Proposed Solution Narrative */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                  Proposed Solution & Behavior
+                </label>
+                <textarea
+                  rows={2}
+                  value={proposedSolution}
+                  onChange={(e) => setProposedSolution(e.target.value)}
+                  placeholder="Describe how the system or user flow should behave once built..."
+                  className="w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:bg-white"
+                />
+              </div>
+
+              {/* Initial Founder Scoring Sliders */}
+              <div className="grid grid-cols-2 gap-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <div>
+                  <div className="flex justify-between text-xs font-semibold text-slate-800 mb-1">
+                    <span>User & Business Impact</span>
+                    <span className="font-mono font-bold text-blue-600">{impact} / 5</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="5"
+                    value={impact}
+                    onChange={(e) => setImpact(Number(e.target.value))}
+                    className="w-full accent-blue-600"
+                  />
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs font-semibold text-slate-800 mb-1">
+                    <span>Implementation Simplicity</span>
+                    <span className="font-mono font-bold text-emerald-600">{simplicity} / 5</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="5"
+                    value={simplicity}
+                    onChange={(e) => setSimplicity(Number(e.target.value))}
+                    className="w-full accent-emerald-600"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Footer Actions */}
           <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
@@ -466,10 +537,14 @@ export const NewIdeaModal: React.FC = () => {
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold rounded-lg shadow-sm flex items-center space-x-1.5 transition-all"
+              className={`px-5 py-2.5 text-white text-xs font-bold rounded-lg shadow-sm flex items-center space-x-1.5 transition-all ${
+                mode === 'quick_task'
+                  ? 'bg-amber-600 hover:bg-amber-700 active:bg-amber-800'
+                  : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
+              }`}
             >
               <Plus className="w-4 h-4" />
-              <span>Add to Backlog & Open Deliberation</span>
+              <span>{mode === 'quick_task' ? 'Add Task to Board (Direct Track)' : 'Add to Backlog & Open Deliberation'}</span>
             </button>
           </div>
         </form>

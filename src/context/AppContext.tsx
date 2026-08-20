@@ -220,6 +220,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Consensus Evaluation
   const checkConsensus = (idea: IdeaCard): ConsensusCheckResult => {
     const totalMembers = teamMembers.length;
+
+    // Ordinary / configuration tasks do not require team consensus voting
+    if (idea.isQuickTask || idea.requiresConsensus === false) {
+      return {
+        allowed: true,
+        approvedCount: totalMembers,
+        totalMembers,
+        missingApprovals: [],
+        objections: [],
+      };
+    }
+
     let approvedCount = 0;
     const missingApprovals: TeamMember[] = [];
     const objections: { member: TeamMember; comment?: string }[] = [];
@@ -258,6 +270,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const canMoveToStage = (idea: IdeaCard, targetStage: KanbanStage): { allowed: boolean; reason?: string } => {
+    // Ordinary tasks bypass all consensus checks
+    if (idea.isQuickTask || idea.requiresConsensus === false) {
+      return { allowed: true };
+    }
+
     if (targetStage === 'backlog' || targetStage === 'refinement') {
       return { allowed: true };
     }

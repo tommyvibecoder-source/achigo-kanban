@@ -58,6 +58,8 @@ export interface IdeaCard {
   projectId: string;
   title: string;
   issueType: IssueType; // 'feature' | 'bug' | 'improvement' | 'research' | 'task' | 'design' | 'security'
+  isQuickTask?: boolean; // Ordinary / chore task without heavy scoring or consensus
+  requiresConsensus?: boolean; // false for ordinary tasks
   stage: KanbanStage;
   priority: Priority;
   

@@ -18,7 +18,8 @@ import {
   PenTool,
   Check,
   Copy,
-  Sparkles
+  Sparkles,
+  Wrench
 } from 'lucide-react';
 
 export const IdeaModal: React.FC = () => {
@@ -230,7 +231,12 @@ export const IdeaModal: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-2">
-            {consensus.allowed ? (
+            {editedIdea.isQuickTask || editedIdea.requiresConsensus === false || editedIdea.issueType === 'task' ? (
+              <span className="flex items-center space-x-1 text-xs font-bold text-amber-800 bg-amber-100/90 px-2.5 py-1 rounded-full border border-amber-300">
+                <Wrench className="w-3.5 h-3.5 text-amber-700" />
+                <span>⚡ Ordinary Task (No Consensus Needed)</span>
+              </span>
+            ) : consensus.allowed ? (
               <span className="flex items-center space-x-1 text-xs font-bold text-emerald-700 bg-emerald-100/80 px-2.5 py-1 rounded-full border border-emerald-300">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>100% Team Approved</span>
