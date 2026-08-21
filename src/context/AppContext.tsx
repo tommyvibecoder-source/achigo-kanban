@@ -1,26 +1,22 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Project, IdeaCard, TeamMember, KanbanStage, ActiveView, Priority, VoteStatus, ManualTestCase } from '../types';
+import {
+  Project,
+  IdeaCard,
+  TeamMember,
+  KanbanStage,
+  ActiveView,
+  Priority,
+  VoteStatus,
+  ConsensusCheckResult,
+  ManualTestCase,
+  LoginResult
+} from '../types';
 import { storage } from '../services/storage';
-
-interface ConsensusCheckResult {
-  allowed: boolean;
-  reason?: string;
-  approvedCount: number;
-  totalMembers: number;
-  missingApprovals: TeamMember[];
-  objections: { member: TeamMember; comment?: string }[];
-}
-
-interface LoginResult {
-  success: boolean;
-  mustReset?: boolean;
-  member?: TeamMember;
-  message?: string;
-}
+import { neonService, isNeonConfigured } from '../services/neon';
 
 interface AppContextType {
   projects: Project[];
-  activeProject: Project | undefined;
+  activeProject: Project;
   setActiveProjectId: (id: string) => void;
   createProject: (project: Omit<Project, 'id' | 'createdAt'>) => void;
   updateProject: (project: Project) => void;
@@ -33,7 +29,7 @@ interface AppContextType {
   createIdea: (idea: Omit<IdeaCard, 'id' | 'issueKey' | 'createdAt' | 'updatedAt' | 'votes' | 'comments'>) => void;
   updateIdea: (idea: IdeaCard) => void;
   deleteIdea: (id: string) => { success: boolean; message?: string };
-  moveIdeaStage: (ideaId: string, targetStage: KanbanStage) => { success: boolean; message?: string };
+  moveIdeaStage: (ideaId: string, stage: KanbanStage) => { success: boolean; message?: string };
   voteOnIdea: (ideaId: string, status: VoteStatus, comment?: string) => void;
   addComment: (ideaId: string, text: string) => void;
   toggleManualTest: (ideaId: string, testId: string) => void;
@@ -48,7 +44,6 @@ interface AppContextType {
   updateProfile: (updates: Partial<TeamMember>) => void;
   adminResetMemberPasscode: (memberId: string, newPasscode: string, forceReset?: boolean) => { success: boolean; message?: string };
 
-  // Authentication & Passcode Reset (Zero-cost RBAC)
   isAuthenticated: boolean;
   login: (usernameOrEmail: string, passcode: string) => LoginResult;
   completePasscodeReset: (memberId: string, newPasscode: string) => boolean;
@@ -58,17 +53,16 @@ interface AppContextType {
 
   activeView: ActiveView;
   setActiveView: (view: ActiveView) => void;
-
   isSidebarCollapsed: boolean;
-  setIsSidebarCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsSidebarCollapsed: (collapsed: boolean | ((prev: boolean) => boolean)) => void;
   toggleSidebar: () => void;
 
   searchQuery: string;
-  setSearchQuery: (q: string) => void;
+  setSearchQuery: (query: string) => void;
   selectedPriority: Priority | 'all';
-  setSelectedPriority: (p: Priority | 'all') => void;
+  setSelectedPriority: (priority: Priority | 'all') => void;
   selectedTag: string | 'all';
-  setSelectedTag: (t: string | 'all') => void;
+  setSelectedTag: (tag: string | 'all') => void;
 
   isNewIdeaModalOpen: boolean;
   setIsNewIdeaModalOpen: (open: boolean) => void;
@@ -114,7 +108,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [aiPromptModalIdea, setAiPromptModalIdea] = useState<IdeaCard | null>(null);
 
-  // Sync to storage
+  // Initial Sync from Neon Database (Cloud Persistence)
+  useEffect(() => {
+    if (isNeonConfigured()) {
+      neonService.fetchAll().then((dbData) => {
+        if (dbData) {
+          if (dbData.projects && dbData.projects.length > 0) {
+            setProjects(dbData.projects);
+            storage.saveProjects(dbData.projects);
+          }
+          if (dbData.teamMembers && dbData.teamMembers.length > 0) {
+            setTeamMembers(dbData.teamMembers);
+            storage.saveTeamMembers(dbData.teamMembers);
+          }
+          if (dbData.ideas) {
+            setIdeas(dbData.ideas);
+            storage.saveIdeas(dbData.ideas);
+          }
+        }
+      }).catch((err) => {
+        console.error('Neon cloud sync initialization notice:', err);
+      });
+    }
+  }, []);
+
+  // Sync to local storage
   useEffect(() => {
     storage.saveProjects(projects);
   }, [projects]);
@@ -168,24 +186,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const cleanPass = newPasscode.trim();
     if (cleanPass.length < 4) return false;
 
-    const updated = teamMembers.map((m) =>
-      m.id === memberId
-        ? { ...m, passcode: cleanPass, mustResetPasscode: false }
-        : m
-    );
+    const target = teamMembers.find((m) => m.id === memberId);
+    if (!target) return false;
+
+    const updatedMember = { ...target, passcode: cleanPass, mustResetPasscode: false };
+    const updated = teamMembers.map((m) => (m.id === memberId ? updatedMember : m));
 
     setTeamMembers(updated);
     setActiveUserId(memberId);
     setIsAuthenticated(true);
     localStorage.setItem('achigo_auth_v1', 'true');
+
+    if (isNeonConfigured()) {
+      neonService.upsertTeamMember(updatedMember).catch(console.error);
+    }
     return true;
   };
 
   const updateProfile = (updates: Partial<TeamMember>) => {
-    const updated = teamMembers.map((m) =>
-      m.id === activeUser.id ? { ...m, ...updates } : m
-    );
+    const target = teamMembers.find((m) => m.id === activeUser.id);
+    if (!target) return;
+
+    const updatedMember = { ...target, ...updates };
+    const updated = teamMembers.map((m) => (m.id === activeUser.id ? updatedMember : m));
     setTeamMembers(updated);
+
+    if (isNeonConfigured()) {
+      neonService.upsertTeamMember(updatedMember).catch(console.error);
+    }
   };
 
   const adminResetMemberPasscode = (
@@ -202,13 +230,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, message: 'Passcode must be at least 4 characters long.' };
     }
 
-    const updated = teamMembers.map((m) =>
-      m.id === memberId
-        ? { ...m, passcode: cleanPass, mustResetPasscode: forceReset }
-        : m
-    );
+    const target = teamMembers.find((m) => m.id === memberId);
+    if (!target) return { success: false, message: 'Member not found' };
+
+    const updatedMember = { ...target, passcode: cleanPass, mustResetPasscode: forceReset };
+    const updated = teamMembers.map((m) => (m.id === memberId ? updatedMember : m));
 
     setTeamMembers(updated);
+
+    if (isNeonConfigured()) {
+      neonService.upsertTeamMember(updatedMember).catch(console.error);
+    }
     return { success: true };
   };
 
@@ -303,7 +335,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { allowed: true };
   };
 
-  // Project CRUD (Ensuring Admin can delete smoothly)
+  // Project CRUD
   const createProject = (projectData: Omit<Project, 'id' | 'createdAt'>) => {
     const newProject: Project = {
       ...projectData,
@@ -313,10 +345,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updated = [...projects, newProject];
     setProjects(updated);
     setActiveProjectId(newProject.id);
+
+    if (isNeonConfigured()) {
+      neonService.upsertProject(newProject).catch(console.error);
+    }
   };
 
   const updateProject = (project: Project) => {
     setProjects(projects.map((p) => (p.id === project.id ? project : p)));
+
+    if (isNeonConfigured()) {
+      neonService.upsertProject(project).catch(console.error);
+    }
   };
 
   const deleteProject = (id: string): { success: boolean; message?: string } => {
@@ -333,6 +373,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (activeProjectId === id) {
       setActiveProjectId(remaining[0].id);
+    }
+
+    if (isNeonConfigured()) {
+      neonService.deleteProject(id).catch(console.error);
     }
     return { success: true };
   };
@@ -372,6 +416,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setIdeas([newIdea, ...ideas]);
+
+    if (isNeonConfigured()) {
+      neonService.upsertIdea(newIdea).catch(console.error);
+    }
   };
 
   const updateIdea = (updatedIdea: IdeaCard) => {
@@ -379,6 +427,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIdeas(ideas.map((i) => (i.id === fresh.id ? fresh : i)));
     if (activeIdea?.id === fresh.id) {
       setActiveIdea(fresh);
+    }
+
+    if (isNeonConfigured()) {
+      neonService.upsertIdea(fresh).catch(console.error);
     }
   };
 
@@ -392,6 +444,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIdeas(ideas.filter((i) => i.id !== id));
     if (activeIdea?.id === id) {
       setActiveIdea(null);
+    }
+
+    if (isNeonConfigured()) {
+      neonService.deleteIdea(id).catch(console.error);
     }
     return { success: true };
   };
@@ -494,15 +550,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       mustResetPasscode: memberData.mustResetPasscode !== undefined ? memberData.mustResetPasscode : true,
     };
     setTeamMembers([...teamMembers, newMember]);
+
+    if (isNeonConfigured()) {
+      neonService.upsertTeamMember(newMember).catch(console.error);
+    }
   };
 
   const updateTeamMember = (member: TeamMember) => {
     setTeamMembers(teamMembers.map((m) => (m.id === member.id ? member : m)));
+
+    if (isNeonConfigured()) {
+      neonService.upsertTeamMember(member).catch(console.error);
+    }
   };
 
   const deleteTeamMember = (id: string) => {
     if (teamMembers.length <= 1) return;
     setTeamMembers(teamMembers.filter((m) => m.id !== id));
+
+    if (isNeonConfigured()) {
+      neonService.deleteTeamMember(id).catch(console.error);
+    }
   };
 
   const resetAllData = () => {
@@ -552,8 +620,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const matchesText =
           idea.title.toLowerCase().includes(q) ||
           idea.issueKey.toLowerCase().includes(q) ||
-          idea.summary.toLowerCase().includes(q) ||
-          idea.painPoint.toLowerCase().includes(q) ||
+          idea.summary?.toLowerCase().includes(q) ||
+          idea.painPoint?.toLowerCase().includes(q) ||
           idea.tags.some((t) => t.toLowerCase().includes(q));
         if (!matchesText) return false;
       }

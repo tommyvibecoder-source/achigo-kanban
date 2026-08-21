@@ -110,3 +110,19 @@ export interface Project {
 }
 
 export type ActiveView = 'kanban' | 'backlog' | 'prd_list' | 'matrix';
+
+export interface ConsensusCheckResult {
+  allowed: boolean;
+  reason?: string;
+  approvedCount: number;
+  totalMembers: number;
+  missingApprovals: TeamMember[];
+  objections: { member: TeamMember; comment?: string }[];
+}
+
+export interface LoginResult {
+  success: boolean;
+  mustReset?: boolean;
+  member?: TeamMember;
+  message?: string;
+}

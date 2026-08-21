@@ -65,6 +65,9 @@ export const neonService = {
           success_criteria JSONB DEFAULT '[]',
           founder_score JSONB DEFAULT '{}',
           author_id VARCHAR(64),
+          assignee_id VARCHAR(64),
+          is_quick_task BOOLEAN DEFAULT FALSE,
+          requires_consensus BOOLEAN DEFAULT TRUE,
           tags JSONB DEFAULT '[]',
           votes JSONB DEFAULT '{}',
           comments JSONB DEFAULT '[]',
@@ -74,10 +77,9 @@ export const neonService = {
         );
       `;
 
-      console.log('✅ Neon PostgreSQL schema successfully initialized.');
       return true;
     } catch (err) {
-      console.error('❌ Failed to initialize Neon schema:', err);
+      console.error('Failed to initialize Neon schema:', err);
       return false;
     }
   },
@@ -137,6 +139,9 @@ export const neonService = {
         successCriteria: typeof i.success_criteria === 'string' ? JSON.parse(i.success_criteria) : i.success_criteria || [],
         founderScore: typeof i.founder_score === 'string' ? JSON.parse(i.founder_score) : i.founder_score || { userImpact: 4, marketUrgency: 4, implementationSimplicity: 4, strategicFit: 4 },
         authorId: i.author_id,
+        assigneeId: i.assignee_id,
+        isQuickTask: Boolean(i.is_quick_task),
+        requiresConsensus: i.requires_consensus !== false,
         tags: typeof i.tags === 'string' ? JSON.parse(i.tags) : i.tags || [],
         votes: typeof i.votes === 'string' ? JSON.parse(i.votes) : i.votes || {},
         comments: typeof i.comments === 'string' ? JSON.parse(i.comments) : i.comments || [],
@@ -164,12 +169,13 @@ export const neonService = {
         INSERT INTO ideas (
           id, issue_key, project_id, title, issue_type, stage, priority,
           summary, target_audience, pain_point, proposed_solution, value_proposition,
-          success_criteria, founder_score, author_id, tags, votes, comments, manual_tests,
-          created_at, updated_at
+          success_criteria, founder_score, author_id, assignee_id, is_quick_task, requires_consensus,
+          tags, votes, comments, manual_tests, created_at, updated_at
         ) VALUES (
           ${idea.id}, ${idea.issueKey}, ${idea.projectId}, ${idea.title}, ${idea.issueType}, ${idea.stage}, ${idea.priority},
           ${idea.summary}, ${idea.targetAudience}, ${idea.painPoint}, ${idea.proposedSolution}, ${idea.valueProposition},
-          ${JSON.stringify(idea.successCriteria)}, ${JSON.stringify(idea.founderScore)}, ${idea.authorId},
+          ${JSON.stringify(idea.successCriteria)}, ${JSON.stringify(idea.founderScore)}, ${idea.authorId}, ${idea.assigneeId || null},
+          ${Boolean(idea.isQuickTask)}, ${idea.requiresConsensus !== false},
           ${JSON.stringify(idea.tags)}, ${JSON.stringify(idea.votes)}, ${JSON.stringify(idea.comments)}, ${JSON.stringify(idea.manualTests || [])},
           ${idea.createdAt}, ${idea.updatedAt}
         )
@@ -183,6 +189,9 @@ export const neonService = {
           value_proposition = EXCLUDED.value_proposition,
           success_criteria = EXCLUDED.success_criteria,
           founder_score = EXCLUDED.founder_score,
+          assignee_id = EXCLUDED.assignee_id,
+          is_quick_task = EXCLUDED.is_quick_task,
+          requires_consensus = EXCLUDED.requires_consensus,
           tags = EXCLUDED.tags,
           votes = EXCLUDED.votes,
           comments = EXCLUDED.comments,
@@ -207,6 +216,88 @@ export const neonService = {
       return true;
     } catch (err) {
       console.error('Failed to delete idea in Neon:', err);
+      return false;
+    }
+  },
+
+  /**
+   * Upserts a project space in Neon
+   */
+  async upsertProject(project: Project): Promise<boolean> {
+    const sql = getSql();
+    if (!sql) return false;
+    try {
+      await sql`
+        INSERT INTO projects (id, name, key_prefix, description, color, icon, created_at)
+        VALUES (${project.id}, ${project.name}, ${project.keyPrefix}, ${project.description}, ${project.color}, ${project.icon}, ${project.createdAt})
+        ON CONFLICT (id) DO UPDATE SET
+          name = EXCLUDED.name,
+          key_prefix = EXCLUDED.key_prefix,
+          description = EXCLUDED.description,
+          color = EXCLUDED.color,
+          icon = EXCLUDED.icon;
+      `;
+      return true;
+    } catch (err) {
+      console.error('Failed to sync project to Neon:', err);
+      return false;
+    }
+  },
+
+  /**
+   * Deletes a project from Neon
+   */
+  async deleteProject(id: string): Promise<boolean> {
+    const sql = getSql();
+    if (!sql) return false;
+    try {
+      await sql`DELETE FROM projects WHERE id = ${id}`;
+      return true;
+    } catch (err) {
+      console.error('Failed to delete project in Neon:', err);
+      return false;
+    }
+  },
+
+  /**
+   * Upserts a team member in Neon
+   */
+  async upsertTeamMember(member: TeamMember): Promise<boolean> {
+    const sql = getSql();
+    if (!sql) return false;
+    try {
+      await sql`
+        INSERT INTO team_members (id, name, username, email, role, role_type, avatar, color, passcode, must_reset_passcode)
+        VALUES (${member.id}, ${member.name}, ${member.username}, ${member.email || ''}, ${member.role}, ${member.roleType}, ${member.avatar}, ${member.color}, ${member.passcode}, ${member.mustResetPasscode ?? false})
+        ON CONFLICT (id) DO UPDATE SET
+          name = EXCLUDED.name,
+          username = EXCLUDED.username,
+          email = EXCLUDED.email,
+          role = EXCLUDED.role,
+          role_type = EXCLUDED.role_type,
+          avatar = EXCLUDED.avatar,
+          color = EXCLUDED.color,
+          passcode = EXCLUDED.passcode,
+          must_reset_passcode = EXCLUDED.must_reset_passcode;
+      `;
+      return true;
+    } catch (err) {
+      console.error('Failed to sync team member to Neon:', err);
+      return false;
+    }
+  },
+
+  /**
+   * Deletes a team member from Neon
+   */
+  async deleteTeamMember(id: string): Promise<boolean> {
+    const sql = getSql();
+    if (!sql) return false;
+    try {
+      await sql`DELETE FROM team_members WHERE id = ${id}`;
+      return true;
+    } catch (err) {
+      console.error('Failed to delete team member in Neon:', err);
       return false;
     }
   },
