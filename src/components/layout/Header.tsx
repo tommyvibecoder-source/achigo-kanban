@@ -68,7 +68,7 @@ export const Header: React.FC = () => {
   return (
     <header className="h-13 md:h-14 bg-white border-b border-slate-200 px-2.5 sm:px-4 flex items-center justify-between z-30 sticky top-0 shadow-xs select-none gap-2">
       {/* Left: Brand & Project Switcher */}
-      <div className="flex items-center space-x-1.5 sm:space-x-2.5 truncate">
+      <div className="flex items-center space-x-1.5 sm:space-x-2.5 shrink-0">
         {/* Sidebar Toggle Button */}
         <button
           onClick={toggleSidebar}
@@ -97,13 +97,13 @@ export const Header: React.FC = () => {
         <div className="relative">
           <button
             onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
-            className="flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg text-xs font-semibold border border-slate-200 transition-colors"
+            className="flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg text-xs font-semibold border border-slate-200 transition-colors cursor-pointer"
           >
             <span
               className="w-2.5 h-2.5 rounded-full shrink-0"
               style={{ backgroundColor: activeProject?.color || '#0052CC' }}
             />
-            <span className="max-w-[80px] sm:max-w-[140px] md:max-w-[180px] truncate hidden sm:inline">
+            <span className="max-w-[100px] sm:max-w-[140px] md:max-w-[180px] truncate">
               {activeProject?.name || 'Select Project'}
             </span>
             <span className="text-[10px] px-1 sm:px-1.5 py-0.2 bg-blue-100 text-blue-800 rounded font-mono font-bold shrink-0">
@@ -115,10 +115,10 @@ export const Header: React.FC = () => {
           {isProjectDropdownOpen && (
             <>
               <div
-                className="fixed inset-0 z-40"
+                className="fixed inset-0 z-[90]"
                 onClick={() => setIsProjectDropdownOpen(false)}
               />
-              <div className="absolute left-0 mt-1.5 w-64 sm:w-72 max-w-[90vw] bg-white rounded-xl shadow-2xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute left-0 mt-1.5 w-64 sm:w-72 max-w-[90vw] bg-white rounded-xl shadow-2xl border border-slate-200 py-1.5 z-[100] animate-in fade-in zoom-in-95 duration-100">
                 <div className="px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                   Startup Projects
                 </div>
